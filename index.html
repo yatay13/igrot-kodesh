@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Igrot Kodesh AI - Buscador y Traductor Inteligente</title>
-    <!-- Diseñado con Tailwind CSS para adaptarse a Celulares y Computadoras -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -14,7 +13,7 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between p-4 md:p-8">
 
-    <!-- Encabezado -->
+    <!-- Header -->
     <header class="max-w-6xl mx-auto w-full flex flex-col md:flex-row justify-between items-center pb-6 border-b border-slate-800 gap-4">
         <div class="flex items-center gap-3">
             <div class="bg-blue-600 text-white p-3 rounded-xl font-bold text-xl shadow-lg shadow-blue-500/20">א״ק</div>
@@ -25,14 +24,14 @@
         </div>
         <div class="flex items-center gap-2 bg-slate-800/80 px-4 py-2 rounded-full border border-slate-700 text-xs text-slate-300">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Online / Accesible en cualquier dispositivo
+            Modo Activo
         </div>
     </header>
 
-    <!-- Contenido Principal -->
+    <!-- Main Content -->
     <main class="max-w-6xl mx-auto w-full my-8 flex-grow">
         
-        <!-- Barra de Búsqueda -->
+        <!-- Search Box -->
         <div class="bg-slate-800/50 backdrop-blur-xl p-6 rounded-2xl border border-slate-700/60 shadow-2xl mb-8">
             <label class="block text-sm font-medium text-slate-300 mb-2">¿Qué tema, fecha o concepto buscas en las cartas del Rebbe?</label>
             <div class="flex flex-col md:flex-row gap-3">
@@ -44,13 +43,13 @@
                 </button>
             </div>
 
-            <!-- Botones de Acceso Rápido -->
+            <!-- Botones Rápidos -->
             <div class="mt-4 flex flex-wrap gap-2 text-xs">
                 <span class="text-slate-400 self-center mr-1">Temas frecuentes:</span>
-                <button onclick="quickSearch('Negocios y Sustento')" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600/50">💼 Negocios & Sustento</button>
-                <button onclick="quickSearch('Educación de los hijos')" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600/50">🎓 Educación (Jinuj)</button>
-                <button onclick="quickSearch('Salud y Curación')" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600/50">🏥 Salud (Refuá)</button>
-                <button onclick="quickSearch('Fe y Bitajón')" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600/50">✡️ Fe & Tranquilidad</button>
+                <button onclick="quickSearch('Negocios')" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600/50">💼 Negocios & Sustento</button>
+                <button onclick="quickSearch('Educación')" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600/50">🎓 Educación (Jinuj)</button>
+                <button onclick="quickSearch('Salud')" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600/50">🏥 Salud (Refuá)</button>
+                <button onclick="quickSearch('Fe')" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600/50">✡️ Fe & Bitajón</button>
             </div>
         </div>
 
@@ -64,41 +63,53 @@
     </main>
 
     <script>
+        // Base de cartas simuladas para prueba
+        const BASE_CARTAS = [
+            {
+                letter_id: "Volumen 18 - Carta #6812",
+                hebrew_date: 'כ"ד אלול ה\'תשכ"ב',
+                topics: ["negocios", "sustento", "parnasa", "trabajo", "fe", "bitajon"],
+                original_text: 'ב"ה. שלום וברכה. במענה למכתבו מיום... בנוגע לעסק ומסחר, הנה המאמין בהשגחה פרטית יודע שפרנסתו קצובה מאת הבורא, והשתדלות האדם היא רק כלי...',
+                translated_text: "Con la ayuda de D-s. Saludos y bendiciones. En respuesta a su carta respecto al negocio y comercio: Aquel que cree en la Providencia Divina sabe que su sustento está decretado por el Creador Bendito Sea, y el esfuerzo del hombre es solo el recipiente natural para recibir la bendición. Por lo tanto, no hay razón para la desesperación o la ansiedad."
+            },
+            {
+                letter_id: "Volumen 12 - Carta #4120",
+                hebrew_date: 'י"א ניסן ה\'תשי"ז',
+                topics: ["educacion", "jinuj", "hijos", "estudio", "salud"],
+                original_text: 'ב"ה. ימי התשלומין לחג המצות... בנוגע לענין השפעה וחיזוק הלימוד והפצת המעיינות חוצה, הנה העיקר הוא המעשה בפועל ממש בשמחה ובטוב לבב...',
+                translated_text: "Con respecto al asunto de influir, fortalecer el estudio y educar: Lo principal es la acción práctica en la realidad concreta, hecha con alegría y con un corazón dispuesto..."
+            }
+        ];
+
         function quickSearch(term) {
             document.getElementById('queryInput').value = term;
             performSearch();
         }
 
-        async function performSearch() {
-            const query = document.getElementById('queryInput').value;
+        function performSearch() {
+            const query = document.getElementById('queryInput').value.toLowerCase().trim();
             const container = document.getElementById('resultsContainer');
             if(!query) return;
 
             container.innerHTML = `
                 <div class="flex justify-center items-center py-12 text-blue-400 gap-3">
                     <div class="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                    <span>Analizando volúmenes y traduciendo cartas...</span>
+                    <span>Buscando en las cartas...</span>
                 </div>
             `;
 
-            try {
-                // Conexión con nuestro backend inteligente
-                const response = await fetch('/api/search', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: query })
-                });
-                const results = await response.json();
-                renderResults(results);
-            } catch(e) {
-                container.innerHTML = `<div class="text-red-400 text-center py-6">Error al conectar con la base de cartas.</div>`;
-            }
+            setTimeout(() => {
+                const filtradas = BASE_CARTAS.filter(c => 
+                    c.topics.some(t => query.includes(t) || t.includes(query)) || query.includes("carta") || query.length < 3
+                );
+                renderResults(filtradas);
+            }, 500);
         }
 
         function renderResults(results) {
             const container = document.getElementById('resultsContainer');
             if(results.length === 0) {
-                container.innerHTML = `<p class="text-center text-slate-400">No se encontraron cartas para este tema.</p>`;
+                container.innerHTML = `<p class="text-center text-slate-400 py-12">No se encontraron cartas relacionadas con ese tema en la base actual.</p>`;
                 return;
             }
 
