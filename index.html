@@ -1,143 +1,132 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Igrot Kodesh AI - Buscador y Traductor Inteligente</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
-        .hebrew-text { font-family: 'Merriweather', serif; direction: rtl; text-align: right; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buscador Igrot Kodesh</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { text-align: center; color: #1a252f; }
+    .search-box { display: flex; gap: 10px; margin-bottom: 25px; }
+    input { flex: 1; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; }
+    button { padding: 12px 24px; font-size: 16px; background: #0066cc; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #0052a3; }
+    .results-list { display: grid; gap: 12px; }
+    .letter-card { background: white; padding: 15px 20px; border-radius: 8px; border: 1px solid #e1e4e8; cursor: pointer; transition: all 0.2s; }
+    .letter-card:hover { border-color: #0066cc; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .letter-title { font-weight: bold; color: #0066cc; font-size: 18px; }
+    .letter-date { font-size: 14px; color: #666; margin-top: 4px; }
+    .letter-summary { margin-top: 8px; font-size: 15px; color: #444; }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+    .modal { background: white; padding: 25px; border-radius: 8px; max-width: 700px; width: 100%; max-height: 85vh; overflow-y: auto; position: relative; }
+    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; border: none; background: none; cursor: pointer; }
+    .loading { text-align: center; font-style: italic; color: #666; margin: 20px 0; }
+    .hebrew-text { font-family: 'SBL Hebrew', 'Times New Roman', serif; direction: rtl; text-align: right; background: #fdfbf7; padding: 12px; border-right: 3px solid #0066cc; margin: 15px 0; font-size: 17px; }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between p-4 md:p-8">
+<body>
 
-    <!-- Header -->
-    <header class="max-w-6xl mx-auto w-full flex flex-col md:flex-row justify-between items-center pb-6 border-b border-slate-800 gap-4">
-        <div class="flex items-center gap-3">
-            <div class="bg-blue-600 text-white p-3 rounded-xl font-bold text-xl shadow-lg shadow-blue-500/20">א״ק</div>
-            <div>
-                <h1 class="text-2xl font-bold tracking-tight text-white">Igrot Kodesh AI</h1>
-                <p class="text-xs text-slate-400">Buscador y Traductor del Rebbe para Celular y PC</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-2 bg-slate-800/80 px-4 py-2 rounded-full border border-slate-700 text-xs text-slate-300">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Modo Activo
-        </div>
-    </header>
+  <div class="container">
+    <h1>Buscador Igrot Kodesh</h1>
+    <div class="search-box">
+      <input type="text" id="queryInput" placeholder="Escribe un tema (ej. parnasa, salud, educación, matrimonio)...">
+      <button onclick="searchLetters()">Buscar</button>
+    </div>
 
-    <!-- Main Content -->
-    <main class="max-w-6xl mx-auto w-full my-8 flex-grow">
-        
-        <!-- Search Box -->
-        <div class="bg-slate-800/50 backdrop-blur-xl p-6 rounded-2xl border border-slate-700/60 shadow-2xl mb-8">
-            <label class="block text-sm font-medium text-slate-300 mb-2">¿Qué tema, fecha o concepto buscas en las cartas del Rebbe?</label>
-            <div class="flex flex-col md:flex-row gap-3">
-                <input type="text" id="queryInput" placeholder="Ej: Bendición para un negocio, educar a los hijos, fe (Bitajón)..." 
-                       class="flex-grow bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                
-                <button onclick="performSearch()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3.5 rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2">
-                    Buscar Cartas
-                </button>
-            </div>
+    <div id="status" class="loading" style="display:none;">Buscando cartas relacionadas...</div>
+    <div id="resultsList" class="results-list"></div>
+  </div>
 
-            <!-- Botones Rápidos -->
-            <div class="mt-4 flex flex-wrap gap-2 text-xs">
-                <span class="text-slate-400 self-center mr-1">Temas frecuentes:</span>
-                <button onclick="quickSearch('Negocios')" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600/50">💼 Negocios & Sustento</button>
-                <button onclick="quickSearch('Educación')" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600/50">🎓 Educación (Jinuj)</button>
-                <button onclick="quickSearch('Salud')" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600/50">🏥 Salud (Refuá)</button>
-                <button onclick="quickSearch('Fe')" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600/50">✡️ Fe & Bitajón</button>
-            </div>
-        </div>
+  <!-- Modal para ver el detalle de la carta -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal">
+      <button class="close-btn" onclick="closeModal()">&times;</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
 
-        <!-- Área de Resultados -->
-        <div id="resultsContainer" class="space-y-6">
-            <div class="text-center py-12 text-slate-500">
-                <p>Escribe tu búsqueda para encontrar las cartas correspondientes traducidas.</p>
-            </div>
-        </div>
+  <script>
+    async function searchLetters() {
+      const query = document.getElementById('queryInput').value.trim();
+      if (!query) return;
 
-    </main>
+      const statusEl = document.getElementById('status');
+      const listEl = document.getElementById('resultsList');
 
-    <script>
-        // Base de cartas simuladas para prueba
-        const BASE_CARTAS = [
-            {
-                letter_id: "Volumen 18 - Carta #6812",
-                hebrew_date: 'כ"ד אלול ה\'תשכ"ב',
-                topics: ["negocios", "sustento", "parnasa", "trabajo", "fe", "bitajon"],
-                original_text: 'ב"ה. שלום וברכה. במענה למכתבו מיום... בנוגע לעסק ומסחר, הנה המאמין בהשגחה פרטית יודע שפרנסתו קצובה מאת הבורא, והשתדלות האדם היא רק כלי...',
-                translated_text: "Con la ayuda de D-s. Saludos y bendiciones. En respuesta a su carta respecto al negocio y comercio: Aquel que cree en la Providencia Divina sabe que su sustento está decretado por el Creador Bendito Sea, y el esfuerzo del hombre es solo el recipiente natural para recibir la bendición. Por lo tanto, no hay razón para la desesperación o la ansiedad."
-            },
-            {
-                letter_id: "Volumen 12 - Carta #4120",
-                hebrew_date: 'י"א ניסן ה\'תשי"ז',
-                topics: ["educacion", "jinuj", "hijos", "estudio", "salud"],
-                original_text: 'ב"ה. ימי התשלומין לחג המצות... בנוגע לענין השפעה וחיזוק הלימוד והפצת המעיינות חוצה, הנה העיקר הוא המעשה בפועל ממש בשמחה ובטוב לבב...',
-                translated_text: "Con respecto al asunto de influir, fortalecer el estudio y educar: Lo principal es la acción práctica en la realidad concreta, hecha con alegría y con un corazón dispuesto..."
-            }
-        ];
+      statusEl.style.display = 'block';
+      statusEl.innerText = 'Consultando Igrot Kodesh (buscando de 10 a 15 cartas)...';
+      listEl.innerHTML = '';
 
-        function quickSearch(term) {
-            document.getElementById('queryInput').value = term;
-            performSearch();
-        }
-
-      async function performSearch() {
-    const query = document.getElementById('queryInput').value.trim();
-    const container = document.getElementById('resultsContainer');
-    if(!query) return;
-
-    container.innerHTML = `
-        <div class="flex justify-center items-center py-12 text-blue-400 gap-3">
-            <div class="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-            <span>Consultando a la Inteligencia Artificial sobre las cartas del Rebbe...</span>
-        </div>
-    `;
-
-    try {
-        const response = await fetch('/api/search', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: query })
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query })
         });
 
-        const results = await response.json();
-        renderResults(results);
-    } catch(e) {
-        container.innerHTML = `<div class="text-red-400 text-center py-6">Error en cliente: ${e.message}</div>`;
-    }
-}
+        const data = await res.json();
+        statusEl.style.display = 'none';
 
-        function renderResults(results) {
-            const container = document.getElementById('resultsContainer');
-            if(results.length === 0) {
-                container.innerHTML = `<p class="text-center text-slate-400 py-12">No se encontraron cartas relacionadas con ese tema en la base actual.</p>`;
-                return;
-            }
-
-            container.innerHTML = results.map(r => `
-                <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-6 shadow-xl space-y-4">
-                    <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
-                        <span class="bg-blue-900/60 text-blue-300 font-semibold text-xs px-3 py-1 rounded-md border border-blue-700/50">${r.letter_id}</span>
-                        <span class="text-slate-400 text-xs">Fecha: ${r.hebrew_date}</span>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-slate-900/80 p-4 rounded-xl">
-                            <span class="text-xs font-semibold text-slate-400 block mb-2">Original (Hebreo / Idish)</span>
-                            <p class="hebrew-text text-slate-200 text-sm leading-relaxed">${r.original_text}</p>
-                        </div>
-                        <div class="bg-slate-900/40 p-4 rounded-xl">
-                            <span class="text-xs font-semibold text-blue-400 block mb-2">Traducción al Español</span>
-                            <p class="text-slate-300 text-sm leading-relaxed">${r.translated_text}</p>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+        if (!Array.isArray(data) || data.length === 0) {
+          listEl.innerHTML = '<p>No se encontraron cartas sobre este tema. Intenta con otro término.</p>';
+          return;
         }
-    </script>
+
+        data.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'letter-card';
+          card.onclick = () => loadLetterDetail(item);
+          card.innerHTML = `
+            <div class="letter-title">${item.letter_id}</div>
+            <div class="letter-date">📅 ${item.hebrew_date}</div>
+            <div class="letter-summary">${item.summary || 'Haz clic para cargar el texto traducido.'}</div>
+          `;
+          listEl.appendChild(card);
+        });
+
+      } catch (err) {
+        statusEl.innerText = 'Error al conectar con la API.';
+      }
+    }
+
+    async function loadLetterDetail(item) {
+      const modal = document.getElementById('modalOverlay');
+      const modalContent = document.getElementById('modalContent');
+
+      modal.style.display = 'flex';
+      modalContent.innerHTML = `
+        <h2>${item.letter_id}</h2>
+        <p><strong>Fecha:</strong> ${item.hebrew_date}</p>
+        <div class="loading">Traduciendo y cargando contenido completo del Rebbe...</div>
+      `;
+
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ selected_letter: item })
+        });
+
+        const detail = await res.json();
+
+        modalContent.innerHTML = `
+          <h2>${detail.letter_id}</h2>
+          <p><strong>Fecha:</strong> ${detail.hebrew_date}</p>
+          <hr>
+          <h4>Texto Original (Hebreo / Yiddish):</h4>
+          <div class="hebrew-text">${detail.original_text}</div>
+          <h4>Traducción al Español:</h4>
+          <p style="line-height: 1.6;">${detail.translated_text}</p>
+        `;
+      } catch (err) {
+        modalContent.innerHTML += `<p style="color:red;">Error al cargar el detalle de la carta.</p>`;
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').style.display = 'none';
+    }
+  </script>
 </body>
 </html>
