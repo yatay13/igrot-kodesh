@@ -1,17 +1,10 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import os
-import urllib.request
-import urllib.error
+import traceback
+from google import genai
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-
-# Lista de URLs de modelos compatibles a probar en orden
-MODELS_TO_TRY = [
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
-    "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent",
-]
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -43,64 +36,36 @@ class handler(BaseHTTPRequestHandler):
             NO agregues ningún texto fuera del arreglo JSON.
             """
 
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"response_mime_type": "application/json"}
-            }
+            # Inicializar el cliente oficial de Gemini
+            client = genai.Client(api_key=GEMINI_API_KEY)
 
-            last_error = None
-            response_data = None
+            # Generar contenido con el modelo actual gemini-2.5-flash
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+            )
 
-            # Probar cada modelo hasta que uno responda con éxito
-            for model_url in MODELS_TO_TRY:
-                url = f"{model_url}?key={GEMINI_API_KEY}"
-                req = urllib.request.Request(
-                    url,
-                    headers={"Content-Type": "application/json"},
-                    data=json.dumps(payload).encode('utf-8')
-                )
-                try:
-                    with urllib.request.urlopen(req) as response:
-                        res_body = response.read()
-                        res_json = json.loads(res_body.decode('utf-8'))
-                        raw_text = res_json['candidates'][0]['content']['parts'][0]['text'].strip()
+            raw_text = response.text.strip()
 
-                        if raw_text.startswith("```json"):
-                            raw_text = raw_text[7:-3].strip()
-                        elif raw_text.startswith("```"):
-                            raw_text = raw_text[3:-3].strip()
+            if raw_text.startswith("```json"):
+                raw_text = raw_text[7:-3].strip()
+            elif raw_text.startswith("```"):
+                raw_text = raw_text[3:-3].strip()
 
-                        response_data = raw_text
-                        break  # Conexión exitosa, salir del bucle
-                except urllib.error.HTTPError as err:
-                    last_error = err.read().decode('utf-8')
-                    continue  # Si el modelo no existe (404), intenta el siguiente
-
-            if response_data:
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(response_data.encode('utf-8'))
-            else:
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps([{
-                    "letter_id": "Error de Modelo API",
-                    "hebrew_date": "Respuesta Google",
-                    "original_text": last_error or "No se pudo conectar a ningún modelo activo de Gemini.",
-                    "translated_text": "Verifica que GEMINI_API_KEY esté activa en Google AI Studio."
-                }]).encode('utf-8'))
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(raw_text.encode('utf-8'))
 
         except Exception as e:
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps([{
-                "letter_id": "Error de Configuración",
-                "hebrew_date": "Atención",
+                "letter_id": "Error en la Consulta",
+                "hebrew_date": "Detalle Técnico",
                 "original_text": str(e),
-                "translated_text": "Verifica que GEMINI_API_KEY esté correctamente guardada en Vercel."
+                "translated_text": "Traceback: " + traceback.format_exc()
             }]).encode('utf-8'))
 
 app = handler
