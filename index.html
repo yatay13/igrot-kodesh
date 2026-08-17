@@ -86,25 +86,31 @@
             performSearch();
         }
 
-        function performSearch() {
-            const query = document.getElementById('queryInput').value.toLowerCase().trim();
-            const container = document.getElementById('resultsContainer');
-            if(!query) return;
+       async function performSearch() {
+    const query = document.getElementById('queryInput').value.trim();
+    const container = document.getElementById('resultsContainer');
+    if(!query) return;
 
-            container.innerHTML = `
-                <div class="flex justify-center items-center py-12 text-blue-400 gap-3">
-                    <div class="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                    <span>Buscando en las cartas...</span>
-                </div>
-            `;
+    container.innerHTML = `
+        <div class="flex justify-center items-center py-12 text-blue-400 gap-3">
+            <div class="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+            <span>Consultando a la Inteligencia Artificial sobre las cartas del Rebbe...</span>
+        </div>
+    `;
 
-            setTimeout(() => {
-                const filtradas = BASE_CARTAS.filter(c => 
-                    c.topics.some(t => query.includes(t) || t.includes(query)) || query.includes("carta") || query.length < 3
-                );
-                renderResults(filtradas);
-            }, 500);
-        }
+    try {
+        const response = await fetch('/api/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query })
+        });
+
+        const results = await response.json();
+        renderResults(results);
+    } catch(e) {
+        container.innerHTML = `<div class="text-red-400 text-center py-6">Hubo un problema al consultar la IA. Verifica tu API Key en Vercel.</div>`;
+    }
+}
 
         function renderResults(results) {
             const container = document.getElementById('resultsContainer');
