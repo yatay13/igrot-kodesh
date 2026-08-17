@@ -1,8 +1,8 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import os
-import traceback
-from google import genai
+import urllib.request
+import urllib.error
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
@@ -36,36 +36,55 @@ class handler(BaseHTTPRequestHandler):
             NO agregues ningún texto fuera del arreglo JSON.
             """
 
-            # Inicializar el cliente oficial de Gemini
-            client = genai.Client(api_key=GEMINI_API_KEY)
+            # Endpoint oficial v1beta con gemini-1.5-flash
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
 
-            # Generar contenido con el modelo actual gemini-2.5-flash
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt,
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"response_mime_type": "application/json"}
+            }
+
+            req = urllib.request.Request(
+                url,
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(payload).encode('utf-8')
             )
 
-            raw_text = response.text.strip()
+            with urllib.request.urlopen(req) as response:
+                res_body = response.read()
+                res_json = json.loads(res_body.decode('utf-8'))
+                raw_text = res_json['candidates'][0]['content']['parts'][0]['text'].strip()
 
-            if raw_text.startswith("```json"):
-                raw_text = raw_text[7:-3].strip()
-            elif raw_text.startswith("```"):
-                raw_text = raw_text[3:-3].strip()
+                if raw_text.startswith("```json"):
+                    raw_text = raw_text[7:-3].strip()
+                elif raw_text.startswith("```"):
+                    raw_text = raw_text[3:-3].strip()
 
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(raw_text.encode('utf-8'))
+
+        except urllib.error.HTTPError as err:
+            err_body = err.read().decode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            self.wfile.write(raw_text.encode('utf-8'))
-
+            self.wfile.write(json.dumps([{
+                "letter_id": f"Error API ({err.code})",
+                "hebrew_date": "Respuesta Google",
+                "original_text": err_body,
+                "translated_text": "Revisa el detalle técnico en la izquierda."
+            }]).encode('utf-8'))
         except Exception as e:
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps([{
-                "letter_id": "Error en la Consulta",
-                "hebrew_date": "Detalle Técnico",
+                "letter_id": "Error de Configuración",
+                "hebrew_date": "Atención",
                 "original_text": str(e),
-                "translated_text": "Traceback: " + traceback.format_exc()
+                "translated_text": "Verifica que GEMINI_API_KEY esté correctamente guardada en Vercel."
             }]).encode('utf-8'))
 
 app = handler
