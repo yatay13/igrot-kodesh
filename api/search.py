@@ -36,8 +36,8 @@ class handler(BaseHTTPRequestHandler):
             NO agregues ningún texto fuera del arreglo JSON.
             """
 
-            # URL corregida con 'gemini-1.5-flash-latest'
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_API_KEY}"
+            # URL actualizada al modelo estable gemini-2.0-flash
+            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
 
             payload = {
                 "contents": [{"parts": [{"text": prompt}]}],
