@@ -6,6 +6,9 @@ from google import genai
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
+# Lista de modelos compatibles a probar en orden
+CANDIDATE_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash']
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
@@ -36,14 +39,26 @@ class handler(BaseHTTPRequestHandler):
             NO agregues ningún texto fuera del arreglo JSON.
             """
 
-            # Cliente oficial de Google GenAI
             client = genai.Client(api_key=GEMINI_API_KEY)
 
-            # Usamos el modelo recomendado actual gemini-2.5-flash
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt,
-            )
+            response = None
+            last_err = None
+
+            # Probar cada modelo hasta que uno responda con éxito
+            for model_name in CANDIDATE_MODELS:
+                try:
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                    )
+                    if response and response.text:
+                        break
+                except Exception as e:
+                    last_err = e
+                    continue
+
+            if not response or not response.text:
+                raise Exception(f"No se pudo consultar ningún modelo. Último error: {last_err}")
 
             raw_text = response.text.strip()
 
@@ -65,7 +80,7 @@ class handler(BaseHTTPRequestHandler):
                 "letter_id": "Error de SDK/API",
                 "hebrew_date": "Detalle Técnico",
                 "original_text": str(e),
-                "translated_text": "Detalle técnico del error: " + traceback.format_exc()
+                "translated_text": "Traceback: " + traceback.format_exc()
             }]).encode('utf-8'))
 
 app = handler
