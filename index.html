@@ -86,7 +86,7 @@
             performSearch();
         }
 
-       async function performSearch() {
+      async function performSearch() {
     const query = document.getElementById('queryInput').value.trim();
     const container = document.getElementById('resultsContainer');
     if(!query) return;
@@ -108,7 +108,7 @@
         const results = await response.json();
         renderResults(results);
     } catch(e) {
-        container.innerHTML = `<div class="text-red-400 text-center py-6">Hubo un problema al consultar la IA. Verifica tu API Key en Vercel.</div>`;
+        container.innerHTML = `<div class="text-red-400 text-center py-6">Error en cliente: ${e.message}</div>`;
     }
 }
 
