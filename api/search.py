@@ -6,8 +6,12 @@ from google import genai
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# Lista de modelos compatibles a probar en orden
-CANDIDATE_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash']
+# Lista de modelos activos actuales en la API de Google
+CANDIDATE_MODELS = [
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-2.5-flash-lite'
+]
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
