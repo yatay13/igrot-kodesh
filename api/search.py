@@ -36,7 +36,8 @@ class handler(BaseHTTPRequestHandler):
             NO agregues ningún texto fuera del arreglo JSON.
             """
 
-            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+            # URL corregida con 'gemini-1.5-flash-latest'
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_API_KEY}"
 
             payload = {
                 "contents": [{"parts": [{"text": prompt}]}],
@@ -86,5 +87,4 @@ class handler(BaseHTTPRequestHandler):
                 "translated_text": "Verifica que GEMINI_API_KEY esté correctamente guardada en Vercel."
             }]).encode('utf-8'))
 
-# Asignación explícita para que el detector de Vercel encuentre la aplicación
 app = handler
