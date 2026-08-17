@@ -3,17 +3,15 @@ import json
 import os
 import urllib.request
 
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
-        # Leer el tema buscado por el usuario
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
         data = json.loads(post_data.decode('utf-8'))
         user_query = data.get('query', '')
 
-        # Instrucción para que GPT identifique, busque o traduzca cartas del Rebbe
         prompt = f"""
         Eres un erudito e historiador experto en el Igrot Kodesh (las cartas del Rebbe de Lubavitch, Rabbi Menachem Mendel Schneerson).
         El usuario busca cartas sobre el tema o consulta: "{user_query}".
@@ -30,34 +28,31 @@ class handler(BaseHTTPRequestHandler):
             "translated_text": "Traducción clara, fiel y explicativa en español del mensaje del Rebbe"
           }}
         ]
-        NO agregues ningún texto fuera del arreglo JSON.
+        NO agregues ningún texto fuera del arreglo JSON ni marcas de formato Markdown.
         """
 
-        # Enviar petición a OpenAI
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }],
+            "generationConfig": {
+                "response_mime_type": "application/json"
+            }
+        }
+
         req = urllib.request.Request(
-            "https://api.openai.com/v1/chat/completions",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {OPENAI_API_KEY}"
-            },
-            data=json.dumps({
-                "model": "gpt-4o-mini",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.3
-            }).encode('utf-8')
+            url,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(payload).encode('utf-8')
         )
 
         try:
             with urllib.request.urlopen(req) as response:
                 res_body = response.read()
                 res_json = json.loads(res_body.decode('utf-8'))
-                content = res_json['choices'][0]['message']['content'].strip()
-                
-                # Limpiar la respuesta si trae formato markdown
-                if content.startswith("```json"):
-                    content = content[7:-3].strip()
-                elif content.startswith("```"):
-                    content = content[3:-3].strip()
+                content = res_json['candidates'][0]['content']['parts'][0]['text'].strip()
 
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
